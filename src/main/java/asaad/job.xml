@@ -1,0 +1,40 @@
+<project>
+    <link type="text/css" rel="stylesheet" id="dark-mode-custom-link"/>
+    <link type="text/css" rel="stylesheet" id="dark-mode-general-link"/>
+    <style lang="en" type="text/css" id="dark-mode-custom-style"/>
+    <style lang="en" type="text/css" id="dark-mode-native-style"/>
+    <actions/>
+    <description>first project</description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@4.7.2">
+        <configVersion>2</configVersion>
+        <userRemoteConfigs>
+            <hudson.plugins.git.UserRemoteConfig>
+                <url>https://github.com/Asaad27/jenkinsTest</url>
+            </hudson.plugins.git.UserRemoteConfig>
+        </userRemoteConfigs>
+        <branches>
+            <hudson.plugins.git.BranchSpec>
+                <name>*/main</name>
+            </hudson.plugins.git.BranchSpec>
+        </branches>
+        <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+        <submoduleCfg class="empty-list"/>
+        <extensions/>
+    </scm>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <authToken>TOKEN</authToken>
+    <triggers>
+        <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.33.1">
+            <spec/>
+        </com.cloudbees.jenkins.GitHubPushTrigger>
+    </triggers>
+    <concurrentBuild>false</concurrentBuild>
+    <builders/>
+    <publishers/>
+    <buildWrappers/>
+</project>
