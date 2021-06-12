@@ -1,10 +1,13 @@
-package asaad;
+package ci;
 
 import com.cdancy.jenkins.rest.JenkinsClient;
 import com.cdancy.jenkins.rest.domain.common.Error;
 import com.cdancy.jenkins.rest.domain.common.IntegerResponse;
 import com.cdancy.jenkins.rest.domain.job.BuildInfo;
 import com.cdancy.jenkins.rest.domain.queue.QueueItem;
+import com.offbytwo.jenkins.JenkinsServer;
+import com.offbytwo.jenkins.model.Job;
+import com.offbytwo.jenkins.model.JobWithDetails;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -21,8 +24,11 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JenkinsJob {
 
@@ -31,7 +37,7 @@ public class JenkinsJob {
 	private	static String PASSWORD = "1191e8798b94ac79434a686b0070a4c956";   //password should be token api, otherwise crumb error 401
 
 	private String job_name;
-	private	String xml_job_config_path = "src/main/java/asaad/job.xml";
+	private	String xml_job_config_path = "src/main/java/ci/job.xml";
 
 	public JenkinsJob(String job_name, String xml_job_config_path) {
 		this.job_name = job_name;
@@ -105,6 +111,19 @@ public class JenkinsJob {
 
 		}
 		return jobList;
+	}
+
+	//https://github.com/jenkinsci/java-client-api
+	public JobWithDetails details() throws IOException, URISyntaxException {
+
+		JenkinsServer jenkins = new JenkinsServer(new URI(JENKINS_URI), USERNAME, PASSWORD);
+
+		Map<String, Job> jobs = jenkins.getJobs();
+
+		JobWithDetails jobWithDetails = jobs.get(job_name).details();
+
+		return jobWithDetails;
+
 	}
 
 	public  String deleteJob() {
