@@ -32,12 +32,12 @@ import java.util.Map;
 
 public class JenkinsJob {
 
-	private	static String JENKINS_URI = "http://localhost:8080";
-	private	static String USERNAME = "firstAdmin";
-	private	static String PASSWORD = "1191e8798b94ac79434a686b0070a4c956";   //password should be token api, otherwise crumb error 401
+	private static final String JENKINS_URI = "http://localhost:8080";
+	private static final String USERNAME = "firstAdmin";
+	private static final String PASSWORD = "1191e8798b94ac79434a686b0070a4c956";   //password should be token api, otherwise crumb error 401
 
 	private String job_name;
-	private	String xml_job_config_path = "src/main/java/ci/job.xml";
+	private String xml_job_config_path = "src/main/java/ci/job.xml";
 
 	public JenkinsJob(String job_name, String xml_job_config_path) {
 		this.job_name = job_name;
@@ -50,11 +50,32 @@ public class JenkinsJob {
 		}
 	}
 
+	public static List<String> listJobs() {
+		Client client = Client.create();
+		client.addFilter(new com.sun.jersey.api.client.filter.HTTPBasicAuthFilter(USERNAME, PASSWORD));
+		WebResource webResource = client.resource(JENKINS_URI + "/api/xml");
+		ClientResponse response = webResource.get(ClientResponse.class);
+		String jsonResponse = response.getEntity(String.class);
+		client.destroy();
 
+		List<String> jobList = new ArrayList<>();
+		String[] jobs = jsonResponse.split("job>");
+		for (String job : jobs) {
+			String[] names = job.split("name>");
+			if (names.length == 3) {
+				String name = names[1];
+				name = name.substring(0, name.length() - 2); // Take off </ for the closing name tag: </name>
+				jobList.add(name);
 
-	private boolean areErrors(List<Error> errors){
+			}
+
+		}
+		return jobList;
+	}
+
+	private boolean areErrors(List<Error> errors) {
 		int num_errors = 0;
-		for (Error error : errors){
+		for (Error error : errors) {
 			num_errors++;
 			System.out.println("error : " + error.exceptionName());
 		}
@@ -90,43 +111,19 @@ public class JenkinsJob {
 
 	}
 
-	public static List<String> listJobs() {
-		Client client = Client.create();
-		client.addFilter(new com.sun.jersey.api.client.filter.HTTPBasicAuthFilter(USERNAME, PASSWORD));
-		WebResource webResource = client.resource(JENKINS_URI + "/api/xml");
-		ClientResponse response = webResource.get(ClientResponse.class);
-		String jsonResponse = response.getEntity(String.class);
-		client.destroy();
-
-		List<String> jobList = new ArrayList<>();
-		String[] jobs = jsonResponse.split("job>");
-		for (String job : jobs) {
-			String[] names = job.split("name>");
-			if (names.length == 3) {
-				String name = names[1];
-				name = name.substring(0, name.length() - 2); // Take off </ for the closing name tag: </name>
-				jobList.add(name);
-
-			}
-
-		}
-		return jobList;
-	}
-
 	//https://github.com/jenkinsci/java-client-api
 	public JobWithDetails details() throws IOException, URISyntaxException {
 
 		JenkinsServer jenkins = new JenkinsServer(new URI(JENKINS_URI), USERNAME, PASSWORD);
 
 		Map<String, Job> jobs = jenkins.getJobs();
-
-		JobWithDetails jobWithDetails = jobs.get(job_name).details();
-
-		return jobWithDetails;
+		JobWithDetails job;
+		//job.getLastSuccessfulBuild().details().getConsoleOutputText();
+		return jobs.get(job_name).details();
 
 	}
 
-	public  String deleteJob() {
+	public String deleteJob() {
 		Client client = Client.create();
 		client.addFilter(new com.sun.jersey.api.client.filter.HTTPBasicAuthFilter(USERNAME, PASSWORD));
 		WebResource webResource = client.resource(JENKINS_URI + "/job/" + job_name + "/doDelete");
@@ -141,18 +138,18 @@ public class JenkinsJob {
 	public String buildJob() throws InterruptedException {
 		JenkinsClient client = JenkinsClient.builder()
 				.endPoint(JENKINS_URI) //
-				.credentials(USERNAME+":"+PASSWORD)
+				.credentials(USERNAME + ":" + PASSWORD)
 				.build();
-		IntegerResponse queueId = client.api().jobsApi().build(null,job_name);
+		IntegerResponse queueId = client.api().jobsApi().build(null, job_name);
 		List<Error> errorList = queueId.errors();
-		if(!areErrors(errorList))
+		if (!areErrors(errorList))
 			System.out.println("Build successfuly submitted with queue id: " + queueId.value());
 
 		QueueItem queueItem = client.api().queueApi().queueItem(queueId.value());
-		while(true){
+		while (true) {
 			if (queueItem.cancelled())
 				System.out.println("Queue item cancelled");
-			if (queueItem.executable() != null){
+			if (queueItem.executable() != null) {
 				System.out.println("Build is executing with build number: " + queueItem.executable().number());
 				break;
 			}
@@ -218,5 +215,5 @@ public class JenkinsJob {
 		this.xml_job_config_path = xml_job_config_path;
 	}
 
-
 }
+
