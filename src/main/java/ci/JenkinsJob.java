@@ -6,6 +6,8 @@ import com.cdancy.jenkins.rest.domain.common.IntegerResponse;
 import com.cdancy.jenkins.rest.domain.job.BuildInfo;
 import com.cdancy.jenkins.rest.domain.queue.QueueItem;
 import com.offbytwo.jenkins.JenkinsServer;
+import com.offbytwo.jenkins.model.Artifact;
+import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import com.sun.jersey.api.client.Client;
@@ -23,6 +25,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,6 +45,10 @@ public class JenkinsJob {
 	public JenkinsJob(String job_name, String xml_job_config_path) {
 		this.job_name = job_name;
 		this.xml_job_config_path = xml_job_config_path;
+
+	}
+
+	public void createJob(){
 		try {
 			createJob(JENKINS_URI, job_name, xml_job_config_path);
 		} catch (IOException | SAXException | ParserConfigurationException | TransformerException e) {
@@ -49,6 +56,8 @@ public class JenkinsJob {
 			System.err.println(e.toString());
 		}
 	}
+
+
 
 	public static List<String> listJobs() {
 		Client client = Client.create();
@@ -72,7 +81,33 @@ public class JenkinsJob {
 		}
 		return jobList;
 	}
+	public List<CustomPair> getArtifactUrl(String job_name){
+		List<CustomPair> pairList = new ArrayList<>();
+		try {
+			JenkinsServer jenkins = new JenkinsServer(new URI(JENKINS_URI), USERNAME, PASSWORD);
+			Map<String, Job> jobs = jenkins.getJobs();
+			JobWithDetails jobWithDetails = jobs.get(job_name).details();
+			//System.out.println(jobWithDetails.getLastSuccessfulBuild().details().getConsoleOutputText());
+			Build build = jobWithDetails.getLastSuccessfulBuild();
+			List<Artifact> 	artifacts = build.details().getArtifacts();
+			for (Artifact art : artifacts){
+				System.out.println(art.getFileName());
+				System.out.println(art.getDisplayPath());
+				System.out.println(art.getRelativePath());
+				System.out.println("downloading");
+				InputStream inputStream = build.details().downloadArtifact(art);
+				URI uri = new URI(build.getUrl());
+				String artifactPath = uri.getPath() + "artifact/" + art.getRelativePath();
+				URI artifactUri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), artifactPath, "", "");
+				System.out.println(artifactUri);
+				pairList.add(new CustomPair(art.getFileName(), artifactUri));
+			}
+		} catch (URISyntaxException | IOException e) {
+			e.printStackTrace();
+		}
 
+		return pairList;
+	}
 	private boolean areErrors(List<Error> errors) {
 		int num_errors = 0;
 		for (Error error : errors) {
